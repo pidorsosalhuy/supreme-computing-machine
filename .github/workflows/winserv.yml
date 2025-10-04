@@ -25,23 +25,26 @@ jobs:
         # Скачиваем playit
         iwr -uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -outfile "playit.exe"
         
-        # Получаем claim URL (правильная команда)
-        $claim = .\playit.exe claim generate | Out-String
-        echo "claim=$claim" >> $env:GITHUB_OUTPUT
-        echo "🔗 CLAIM URL: $claim"
+        # Получаем полный claim URL
+        $claim_output = .\playit.exe claim generate
+        echo "claim_output=$claim_output" >> $env:GITHUB_OUTPUT
+        echo "🔗 FULL OUTPUT:"
+        echo "$claim_output"
 
     - name: Start Playit and wait
       run: |
-        echo "🚨 IMPORTANT: Go to this URL to connect agent:"
-        echo "${{ steps.playit.outputs.claim }}"
+        echo "🚨 IMPORTANT: Use the code above to connect agent"
         echo ""
-        # Запускаем playit после получения claim URL
+        # Запускаем playit
         Start-Process -FilePath "playit.exe" -WindowStyle Hidden
-        echo ""
-        echo "После подключения агента:"
-        echo "1. Зайди на https://playit.gg"
-        echo "2. В 'Tunnels' создай туннель для порта 3389" 
-        echo "3. Используй полученную ссылку для RDP"
+        
+        echo "📝 Instructions:"
+        echo "1. Go to https://playit.gg/claim"
+        echo "2. Enter the code from above: c67e330158" 
+        echo "3. Agent will connect to your account"
+        echo "4. Go to 'Tunnels' and add tunnel for port 3389"
+        echo "5. Use the tunnel URL for RDP connection"
         echo ""
         echo "⏳ Waiting 6 hours..."
-        timeout /t 21600
+        # Ждем 6 часов (в миллисекундах)
+        Start-Sleep -Seconds 21600
