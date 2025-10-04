@@ -1,4 +1,4 @@
-name: Windows RDP with Playit Claim
+name: Windows RDP with Playit
 
 on:
   workflow_dispatch:
@@ -19,32 +19,23 @@ jobs:
         net localgroup administrators hacker /add
         echo "✅ RDP enabled: user=hacker, password=Password123!"
 
-    - name: Get Playit claim URL
-      id: playit
+    - name: Setup Playit
       run: |
         # Скачиваем playit
         iwr -uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -outfile "playit.exe"
         
-        # Получаем полный claim URL
-        $claim_output = .\playit.exe claim generate
-        echo "claim_output=$claim_output" >> $env:GITHUB_OUTPUT
-        echo "🔗 FULL OUTPUT:"
-        echo "$claim_output"
-
-    - name: Start Playit and wait
-      run: |
-        echo "🚨 IMPORTANT: Use the code above to connect agent"
+        # Получаем код и сразу запускаем агент в фоне
+        $code = .\playit.exe claim generate
+        echo "🔑 CLAIM CODE: $code"
         echo ""
-        # Запускаем playit
+        echo "🚀 NOW GO TO: https://playit.gg/claim"
+        echo "📝 ENTER CODE: $code"
+        echo ""
+        # Запускаем агента в фоне (не ждем подтверждения)
         Start-Process -FilePath "playit.exe" -WindowStyle Hidden
-        
-        echo "📝 Instructions:"
-        echo "1. Go to https://playit.gg/claim"
-        echo "2. Enter the code from above: c67e330158" 
-        echo "3. Agent will connect to your account"
-        echo "4. Go to 'Tunnels' and add tunnel for port 3389"
-        echo "5. Use the tunnel URL for RDP connection"
-        echo ""
-        echo "⏳ Waiting 6 hours..."
-        # Ждем 6 часов (в миллисекундах)
+
+    - name: Wait
+      run: |
+        echo "⏳ Agent started! Complete the claim process on website..."
+        echo "After claiming, go to playit.gg → Tunnels → Add tunnel for port 3389"
         Start-Sleep -Seconds 21600
