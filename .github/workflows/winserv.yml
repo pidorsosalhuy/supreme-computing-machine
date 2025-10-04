@@ -1,27 +1,44 @@
-name: Windows RDP Auto Claim
+name: Windows RDP with Playit Claim
 
 on:
   workflow_dispatch:
-    inputs:
-      claim_url:
-        description: 'Playit Claim URL from website'
-        required: true
+  schedule:
+    - cron: '0 */6 * * *'
 
 jobs:
   windows-rdp:
     runs-on: windows-latest
+    timeout-minutes: 360
+
     steps:
-    - name: Setup RDP
+    - name: Enable RDP
       run: |
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         net user hacker Password123! /add
         net localgroup administrators hacker /add
+        echo "✅ RDP enabled: user=hacker, password=Password123!"
 
-    - name: Setup Playit Agent
+    - name: Get Playit claim URL
+      id: playit
       run: |
-        Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -OutFile "playit.exe"
-        # Запускаем с claim URL
-        Start-Process -FilePath "playit.exe" -ArgumentList "agent claim --claim-code '${{ github.event.inputs.claim_url }}'" -Wait
-        Start-Process -FilePath "playit.exe" -WindowStyle Hidden
+        # Скачиваем playit
+        iwr -uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -outfile "playit.exe"
         
+        # Получаем claim URL (как в Linux!)
+        $claim = .\playit.exe agent claim-code | Out-String
+        echo "claim=$claim" >> $env:GITHUB_OUTPUT
+        echo "🔗 CLAIM URL: $claim"
+
+    - name: Wait for connection
+      run: |
+        echo "🚨 IMPORTANT: Go to this URL to connect agent:"
+        echo "${{ steps.playit.outputs.claim }}"
+        echo ""
+        echo "После подключения агента:"
+        echo "1. Зайди на https://playit.gg"
+        echo "2. В 'Tunnels' создай туннель для порта 3389" 
+        echo "3. Используй полученную ссылку для RDP"
+        echo ""
+        echo "⏳ Waiting 6 hours..."
         timeout /t 21600
