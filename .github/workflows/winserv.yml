@@ -1,54 +1,27 @@
-name: Windows RDP Tunnel
+name: Windows RDP Auto Claim
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 */6 * * *'
+    inputs:
+      claim_url:
+        description: 'Playit Claim URL from website'
+        required: true
 
 jobs:
   windows-rdp:
     runs-on: windows-latest
-    timeout-minutes: 355
-
     steps:
-    - name: Enable RDP and disable firewall
+    - name: Setup RDP
       run: |
-        # Включаем RDP
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        
-        # Отключаем firewall для простоты
-        Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-        
-        # Добавляем пользователя
         net user hacker Password123! /add
         net localgroup administrators hacker /add
-        net localgroup "Remote Desktop Users" hacker /add
 
-    - name: Download and setup Playit
+    - name: Setup Playit Agent
       run: |
-        # Качаем Playit с правильной ссылкой
-        Invoke-WebRequest -Uri "https://playit.gg/playit-0.9.3.exe" -OutFile "playit.exe"
-        
-        # Или через прямую ссылку
-        # Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.9.3/playit-0.9.3.exe" -OutFile "playit.exe"
-        
-        # Запускаем Playit в фоне
+        Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -OutFile "playit.exe"
+        # Запускаем с claim URL
+        Start-Process -FilePath "playit.exe" -ArgumentList "agent claim --claim-code '${{ github.event.inputs.claim_url }}'" -Wait
         Start-Process -FilePath "playit.exe" -WindowStyle Hidden
-        timeout /t 15
-
-    - name: Wait 5h55m and restart
-      run: |
-        # Ждем 5 часов 55 минут
-        timeout /t 21300
         
-        # Перезапускаем workflow
-        $headers = @{
-          "Authorization" = "token ${{ secrets.AUTO_RESTART_TOKEN }}"
-          "Accept" = "application/vnd.github.v3+json"
-        }
-        $body = @{
-          "ref" = "${{ github.ref }}"
-        } | ConvertTo-Json
-        
-        Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ github.workflow }}.yml/dispatches" -Method Post -Headers $headers -Body $body
+        timeout /t 21600
