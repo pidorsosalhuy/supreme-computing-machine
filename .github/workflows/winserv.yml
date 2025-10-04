@@ -25,8 +25,8 @@ jobs:
         # Скачиваем playit
         iwr -uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -outfile "playit.exe"
         
-        # Получаем claim URL (как в Linux!)
-        $claim = .\playit.exe agent claim-code | Out-String
+        # Получаем claim URL (правильная команда)
+        $claim = .\playit.exe claim | Out-String
         echo "claim=$claim" >> $env:GITHUB_OUTPUT
         echo "🔗 CLAIM URL: $claim"
 
