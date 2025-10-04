@@ -1,0 +1,51 @@
+name: Windows RDP Tunnel
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  windows-rdp:
+    runs-on: windows-latest
+    timeout-minutes: 355
+
+    steps:
+    - name: Enable RDP and disable firewall
+      run: |
+        # Включаем RDP
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        
+        # Отключаем firewall для простоты
+        Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+        
+        # Добавляем пользователя
+        net user hacker Password123! /add
+        net localgroup administrators hacker /add
+        net localgroup "Remote Desktop Users" hacker /add
+
+    - name: Download and setup Playit
+      run: |
+        # Качаем Playit
+        Invoke-WebRequest -Uri "https://playit.gg/download.php?arch=win64" -OutFile "playit.exe"
+        
+        # Запускаем Playit в фоне
+        Start-Process -FilePath "playit.exe" -WindowStyle Hidden
+        timeout /t 10
+
+    - name: Wait 5h55m and restart
+      run: |
+        # Ждем 5 часов 55 минут
+        timeout /t 21300
+        
+        # Перезапускаем workflow
+        $headers = @{
+          "Authorization" = "token ${{ secrets.AUTO_RESTART_TOKEN }}"
+          "Accept" = "application/vnd.github.v3+json"
+        }
+        $body = @{
+          "ref" = "${{ github.ref }}"
+        } | ConvertTo-Json
+        
+        Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ github.workflow }}.yml/dispatches" -Method Post -Headers $headers -Body $body
