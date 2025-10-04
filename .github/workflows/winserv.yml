@@ -26,14 +26,17 @@ jobs:
         iwr -uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -outfile "playit.exe"
         
         # Получаем claim URL (правильная команда)
-        $claim = .\playit.exe claim | Out-String
+        $claim = .\playit.exe claim generate | Out-String
         echo "claim=$claim" >> $env:GITHUB_OUTPUT
         echo "🔗 CLAIM URL: $claim"
 
-    - name: Wait for connection
+    - name: Start Playit and wait
       run: |
         echo "🚨 IMPORTANT: Go to this URL to connect agent:"
         echo "${{ steps.playit.outputs.claim }}"
+        echo ""
+        # Запускаем playit после получения claim URL
+        Start-Process -FilePath "playit.exe" -WindowStyle Hidden
         echo ""
         echo "После подключения агента:"
         echo "1. Зайди на https://playit.gg"
