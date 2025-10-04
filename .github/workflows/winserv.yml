@@ -27,12 +27,15 @@ jobs:
 
     - name: Download and setup Playit
       run: |
-        # Качаем Playit
-        Invoke-WebRequest -Uri "https://playit.gg/download.php?arch=win64" -OutFile "playit.exe"
+        # Качаем Playit с правильной ссылкой
+        Invoke-WebRequest -Uri "https://playit.gg/playit-0.9.3.exe" -OutFile "playit.exe"
+        
+        # Или через прямую ссылку
+        # Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.9.3/playit-0.9.3.exe" -OutFile "playit.exe"
         
         # Запускаем Playit в фоне
         Start-Process -FilePath "playit.exe" -WindowStyle Hidden
-        timeout /t 10
+        timeout /t 15
 
     - name: Wait 5h55m and restart
       run: |
