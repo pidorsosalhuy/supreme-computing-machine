@@ -19,27 +19,27 @@ jobs:
         net localgroup administrators hacker /add
         echo "✅ RDP enabled: user=hacker, password=Password123!"
 
-    - name: Download Playit
+    - name: Setup Playit
       run: |
+        # Скачиваем playit
         iwr -uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.16.2/playit-windows-x86_64-signed.exe" -outfile "playit.exe"
-
-    - name: Get claim code
-      id: get_code
-      run: |
-        # Получаем код и выходим (не ждем подключения)
-        $code = .\playit.exe claim generate --timeout 5
-        echo "code=$code" >> $env:GITHUB_OUTPUT
+        
+        # Запускаем получение кода в фоне и убиваем через 5 секунд
+        Start-Process -FilePath "playit.exe" -ArgumentList "claim generate" -RedirectStandardOutput "claim.txt" -NoNewWindow
+        Start-Sleep -Seconds 5
+        Stop-Process -Name "playit" -Force -ErrorAction SilentlyContinue
+        
+        # Читаем код из файла
+        $code = Get-Content "claim.txt" | Select-String -Pattern "\w+" | ForEach-Object { $_.Matches.Value }
         echo "🔑 CLAIM CODE: $code"
-
-    - name: Start agent
-      run: |
-        # Запускаем агента отдельно (он будет ждать подключения)
+        echo ""
+        echo "🚀 NOW GO TO: https://playit.gg/claim"
+        echo "📝 ENTER CODE: $code"
+        echo ""
+        # Запускаем агента для работы
         Start-Process -FilePath "playit.exe" -WindowStyle Hidden
-        echo "🚀 Agent started! Go claim it:"
-        echo "🌐 https://playit.gg/claim"
-        echo "📝 CODE: ${{ steps.get_code.outputs.code }}"
 
     - name: Wait
       run: |
-        echo "⏳ Waiting 6 hours... Setup your tunnel at playit.gg"
+        echo "⏳ Agent started! Complete claim process and setup RDP tunnel..."
         Start-Sleep -Seconds 21600
